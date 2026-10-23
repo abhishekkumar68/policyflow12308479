@@ -16,9 +16,9 @@ import {
     Check, 
     Terminal, 
     ChevronDown, 
-    ChevronUp,
-    Sliders,
-    Loader2
+    ChevronUp, 
+    Sliders, 
+    Loader2 
 } from 'lucide-react';
 
 export default function PolicyDetails() {
@@ -70,7 +70,6 @@ export default function PolicyDetails() {
                     type: response.data.success ? 'success' : 'warning',
                     text: response.data.message,
                 });
-                // Reload details to reflect updated state and history
                 await loadPolicyDetails();
             }
         } catch (err) {
@@ -162,7 +161,7 @@ export default function PolicyDetails() {
                 </div>
                 <button
                     onClick={() => navigate('/requests')}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-semibold"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-semibold cursor-pointer"
                 >
                     <ArrowLeft className="h-4 w-4" />
                     <span>Back to Requests</span>
@@ -188,7 +187,7 @@ export default function PolicyDetails() {
                     <span className="font-mono font-semibold text-slate-700">{policy.client_request_id || `REQ-${policy.id}`}</span>
                     <span>/</span>
                     <span className="text-[10px] font-mono uppercase bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
-                        TRIPPERS SHIELD PARTNER API V2.4
+                        Operations Detail
                     </span>
                 </div>
 
@@ -207,7 +206,7 @@ export default function PolicyDetails() {
                                 type="button"
                                 onClick={handleReconcile}
                                 disabled={actionLoading}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-xs transition-colors"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-xs transition-colors cursor-pointer"
                             >
                                 <RefreshCw className={`h-3.5 w-3.5 ${actionLoading ? 'animate-spin' : ''}`} />
                                 <span>Check Provider Status (Reconcile)</span>
@@ -219,7 +218,7 @@ export default function PolicyDetails() {
                                 type="button"
                                 onClick={handleSubmitForIssuance}
                                 disabled={actionLoading}
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-xs transition-colors"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-xs transition-colors cursor-pointer"
                             >
                                 <Send className="h-3.5 w-3.5" />
                                 <span>Submit for Issuance</span>
@@ -236,7 +235,7 @@ export default function PolicyDetails() {
                 </div>
 
                 <div className="flex items-center gap-3 text-xs text-slate-500 mt-1.5">
-                    <span>Created by <strong>Neha Sharma ({policy.agent_id})</strong></span>
+                    <span>Created for Agent: <strong>{policy.agent_id}</strong></span>
                     <span>•</span>
                     <span>Initiated: {new Date(policy.created_at).toLocaleString('en-IN', {
                         day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
@@ -257,7 +256,7 @@ export default function PolicyDetails() {
                         {actionMessage.type === 'success' ? <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" /> : <AlertTriangle className="h-4 w-4 shrink-0" />}
                         <span className="font-medium">{actionMessage.text}</span>
                     </div>
-                    <button onClick={() => setActionMessage(null)} className="text-[10px] font-bold uppercase underline">Dismiss</button>
+                    <button onClick={() => setActionMessage(null)} className="text-[10px] font-bold uppercase underline cursor-pointer">Dismiss</button>
                 </div>
             )}
 
@@ -269,19 +268,19 @@ export default function PolicyDetails() {
                             <AlertTriangle className="h-4 w-4 text-amber-600" />
                             <span>Provider Outcome Verification Required</span>
                             <span className="px-2 py-0.5 rounded bg-amber-200 text-amber-900 font-mono text-[10px] font-bold">
-                                TIMEOUT DETECTED
+                                UNCERTAIN STATE
                             </span>
                         </div>
                         <button
                             type="button"
                             onClick={handleReconcile}
-                            className="px-3 py-1 rounded bg-amber-700 text-white font-bold text-[11px] hover:bg-amber-800 transition-colors"
+                            className="px-3 py-1 rounded bg-amber-700 text-white font-bold text-[11px] hover:bg-amber-800 transition-colors cursor-pointer"
                         >
                             Run Status Check
                         </button>
                     </div>
                     <p className="text-[11px] text-amber-800 leading-relaxed">
-                        This transaction encountered an uncertain provider response during the commit call on /api/policy-requests/{policy.id}/submit. To prevent duplicate debits or duplicate policy issuance, PolicyFlow requires querying upstream sync records before queuing any retry attempts.
+                        This transaction timed out during the carrier commit call on /api/policy-requests/{policy.id}/submit. To prevent duplicate debits or duplicate policy binding, query upstream sync records before queuing any retry attempts.
                     </p>
                 </div>
             )}
@@ -297,8 +296,8 @@ export default function PolicyDetails() {
                                 <Shield className="h-4 w-4 text-teal-600" />
                                 <h2 className="text-sm font-bold text-slate-900">Customer &amp; Trip Snapshot</h2>
                             </div>
-                            <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold uppercase tracking-wider">
-                                KYC VERIFIED • PASSPORT TIER A
+                            <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-bold uppercase tracking-wider">
+                                INTAKE RECORD
                             </span>
                         </div>
 
@@ -310,9 +309,9 @@ export default function PolicyDetails() {
                             </div>
 
                             <div>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nationality / Channel</span>
-                                <div className="text-sm font-bold text-slate-800 mt-0.5">Indian National (Republic of India)</div>
-                                <div className="text-[11px] text-slate-500 mt-0.5">Agent: {policy.agent_id}</div>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Agent Binding</span>
+                                <div className="text-sm font-bold text-slate-800 mt-0.5">{policy.agent_id}</div>
+                                <div className="text-[11px] text-slate-500 mt-0.5">Channel Reference: {policy.client_request_id}</div>
                             </div>
 
                             <div className="pt-2 border-t border-slate-100">
@@ -321,27 +320,26 @@ export default function PolicyDetails() {
                                     Destination
                                 </span>
                                 <div className="text-xs font-semibold text-slate-800 mt-0.5">{policy.destination}</div>
-                                <div className="text-[10px] text-slate-400">Underwriting Zone 1</div>
                             </div>
 
                             <div className="pt-2 border-t border-slate-100">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Coverage Duration</span>
                                 <div className="text-xs font-semibold text-slate-800 mt-0.5">
-                                    {policy.trip_start} – {policy.trip_end}
+                                    {policy.trip_start} &ndash; {policy.trip_end}
                                 </div>
                                 <div className="text-[10px] text-slate-400">{policy.travel_days} travel days (inclusive)</div>
                             </div>
 
                             <div className="pt-2 border-t border-slate-100">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Selected Cover</span>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Selected Plan</span>
                                 <div className="text-xs font-semibold text-slate-800 mt-0.5">{policy.plan_code} PLAN</div>
                                 <div className="text-[10px] text-slate-400">Sum Insured: ₹{Number(policy.sum_insured).toLocaleString()}</div>
                             </div>
 
                             <div className="pt-2 border-t border-slate-100">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Actuarial Quotation</span>
-                                <div className="text-xs font-semibold text-slate-800 mt-0.5">#Q-{policy.id}521-AUTO</div>
-                                <div className="text-[10px] text-slate-400">Rate guarantee active for 72h</div>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quotation Reference</span>
+                                <div className="text-xs font-semibold text-slate-800 mt-0.5">REQ-{policy.id}</div>
+                                <div className="text-[10px] text-slate-400">Locked at intake</div>
                             </div>
                         </div>
 
@@ -349,13 +347,13 @@ export default function PolicyDetails() {
                         <div className="p-4 rounded-xl bg-gradient-to-r from-teal-700 to-emerald-700 text-white flex items-center justify-between">
                             <div>
                                 <div className="text-[10px] font-bold uppercase tracking-wider text-teal-200">
-                                    Premium Locked (Actuarial Quotation #{policy.id}521)
+                                    Locked Premium Snapshot
                                 </div>
-                                <div className="text-[11px] text-teal-100 mt-0.5">Rate guarantee active for this policy snapshot</div>
+                                <div className="text-[11px] text-teal-100 mt-0.5">Immutable snapshot persisted upon intake</div>
                             </div>
                             <div className="text-right">
                                 <div className="text-2xl font-extrabold font-mono">₹{parseFloat(policy.premium).toFixed(2)}</div>
-                                <div className="text-[10px] text-teal-200 uppercase font-semibold">INR (Taxes Incl.)</div>
+                                <div className="text-[10px] text-teal-200 uppercase font-semibold">INR</div>
                             </div>
                         </div>
                     </div>
@@ -365,10 +363,10 @@ export default function PolicyDetails() {
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                             <div>
                                 <h2 className="text-sm font-bold text-slate-900">Provider &amp; Issuance Link</h2>
-                                <p className="text-[11px] text-slate-400">Real-time binding state with Trippers Shield API partner</p>
+                                <p className="text-[11px] text-slate-400">Binding state with mock insurer service</p>
                             </div>
                             <span className="font-mono text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
-                                Carrier ID: TSP-SINGAPORE-09
+                                Mock Provider Service
                             </span>
                         </div>
 
@@ -384,14 +382,14 @@ export default function PolicyDetails() {
                                         <button
                                             type="button"
                                             onClick={() => copyToClipboard(policy.provider_reference)}
-                                            className="text-slate-400 hover:text-slate-600 p-1"
+                                            className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
                                             title="Copy Reference"
                                         >
                                             {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
                                         </button>
                                     )}
                                 </div>
-                                <div className="text-[10px] text-slate-400 mt-1">Assigned during initial handoff</div>
+                                <div className="text-[10px] text-slate-400 mt-1">Assigned by provider on dispatch</div>
                             </div>
 
                             {/* Issuance Attempts */}
@@ -399,7 +397,7 @@ export default function PolicyDetails() {
                                 <div className="flex items-center justify-between">
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Issuance Attempts</span>
                                     <span className="font-mono text-xs font-bold text-slate-700">
-                                        {policy.issuance_attempts_count || 0} / 3 Max Allowed
+                                        {policy.issuance_attempts_count || 0} / 3 Max
                                     </span>
                                 </div>
                                 <div className="h-1.5 w-full bg-slate-200 rounded-full mt-2 overflow-hidden">
@@ -408,7 +406,7 @@ export default function PolicyDetails() {
                                         className="h-full bg-teal-600"
                                     ></div>
                                 </div>
-                                <div className="text-[10px] text-slate-400 mt-1">Auto-escalates to ops if max exceeded</div>
+                                <div className="text-[10px] text-slate-400 mt-1">Tracked across retry attempts</div>
                             </div>
                         </div>
 
@@ -433,10 +431,7 @@ export default function PolicyDetails() {
                             <div className="flex items-center justify-between mb-1.5 text-xs">
                                 <span className="font-bold text-slate-700 text-[11px] uppercase tracking-wider flex items-center gap-1.5">
                                     <Terminal className="h-3.5 w-3.5 text-slate-500" />
-                                    Last Upstream Provider Response
-                                </span>
-                                <span className="text-[10px] font-mono text-slate-400">
-                                    Latency: 280ms
+                                    Last Provider Response Payload
                                 </span>
                             </div>
                             <div className="bg-[#0f172a] text-emerald-400 p-4 rounded-xl font-mono text-[11px] overflow-x-auto shadow-inner border border-slate-800">
@@ -464,10 +459,10 @@ export default function PolicyDetails() {
                                 <Sliders className="h-4 w-4 text-teal-600" />
                                 <h3 className="text-sm font-bold text-slate-900">Development Testing Controls</h3>
                                 <span className="px-2 py-0.5 rounded bg-teal-50 border border-teal-200 text-teal-700 font-mono text-[10px] font-bold">
-                                    MOCK ENVIRONMENT
+                                    MOCK SCENARIOS
                                 </span>
                             </div>
-                            <button type="button" className="text-slate-400">
+                            <button type="button" className="text-slate-400 cursor-pointer">
                                 {mockControlsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                             </button>
                         </div>
@@ -475,15 +470,15 @@ export default function PolicyDetails() {
                         {mockControlsOpen && (
                             <div className="p-5 pt-0 border-t border-slate-100 space-y-4">
                                 <p className="text-[11px] text-slate-500 leading-relaxed">
-                                    In a production Laravel workflow, the scheduler or manual operator dispatches ReconcileProviderPolicyJob. Select a simulated mock scenario below to witness deterministic state transition behaviors:
+                                    Simulate upstream insurer edge cases to test idempotent state transitions:
                                 </p>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                                     {[
-                                        { key: 'SUCCESS', title: 'SUCCESS (Policy Found)', desc: 'Carrier returns POL-SG-99201 immediately.' },
-                                        { key: 'TEMPORARY_FAILURE', title: 'TEMPORARY_FAILURE (503)', desc: 'Provider healthcheck returns retriable error.' },
-                                        { key: 'TIMEOUT_AFTER_ISSUE', title: 'TIMEOUT_AFTER_ISSUE', desc: 'Carrier creates policy but client connection times out.' },
-                                        { key: 'DELAYED_CALLBACK', title: 'DELAYED_CALLBACK', desc: 'Carrier returns pending and expects callback later.' },
+                                        { key: 'SUCCESS', title: 'SUCCESS', desc: 'Mock insurer accepts and returns policy number immediately.' },
+                                        { key: 'TEMPORARY_FAILURE', title: 'TEMPORARY_FAILURE (503)', desc: 'Returns retriable error; allows safe retry.' },
+                                        { key: 'TIMEOUT_AFTER_ISSUE', title: 'TIMEOUT_AFTER_ISSUE', desc: 'Creates policy internally but response drops; resolved by reconciliation.' },
+                                        { key: 'DELAYED_CALLBACK', title: 'DELAYED_CALLBACK', desc: 'Returns pending confirmation; expects simulated callback.' },
                                     ].map((scenario) => (
                                         <div
                                             key={scenario.key}
@@ -507,22 +502,22 @@ export default function PolicyDetails() {
 
                                 <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
                                     <div className="text-[11px] font-mono text-slate-500">
-                                        Selected: <strong>{selectedScenario}</strong>
+                                        Scenario: <strong>{selectedScenario}</strong>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <button
                                             type="button"
                                             onClick={handleSimulateCallback}
                                             disabled={actionLoading}
-                                            className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold"
+                                            className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer"
                                         >
-                                            Simulate Async Callback
+                                            Simulate Callback
                                         </button>
                                         <button
                                             type="button"
                                             onClick={handleSubmitForIssuance}
                                             disabled={actionLoading}
-                                            className="px-4 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold"
+                                            className="px-4 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold cursor-pointer"
                                         >
                                             Apply &amp; Submit
                                         </button>
@@ -540,7 +535,7 @@ export default function PolicyDetails() {
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                             <div>
                                 <h3 className="text-sm font-bold text-slate-900">State History &amp; Audit</h3>
-                                <p className="text-[11px] text-slate-400">Immutable event log for this request</p>
+                                <p className="text-[11px] text-slate-400">Chronological transition log</p>
                             </div>
                             <span className="font-mono text-xs font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded">
                                 {policy.state_history?.length || 1} Events
@@ -595,7 +590,7 @@ export default function PolicyDetails() {
                             <span>Interview Architecture Note</span>
                         </div>
                         <p className="text-[11px] text-slate-300 leading-relaxed">
-                            This design enforces the <strong>Two-Phase Idempotent Reconciliation Pattern</strong>. Instead of blindly retrying HTTP requests on network or gateway timeouts, an HTTP 504 puts the policy in <code>PENDING_CONFIRMATION</code>. Running reconciliation queries the carrier by <code>provider_reference</code> before taking any destructive action, preventing duplicate debit and duplicate policy binding.
+                            This design enforces the <strong>Two-Phase Idempotent Reconciliation Pattern</strong>. When a carrier call encounters a network timeout, placing the request in <code>PENDING_CONFIRMATION</code> prevents duplicate debit and duplicate policy binding. The reconciliation action queries provider status to safely recover the issued policy without a blind reissue.
                         </p>
                     </div>
                 </div>

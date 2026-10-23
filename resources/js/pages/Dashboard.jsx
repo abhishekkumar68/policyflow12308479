@@ -52,19 +52,26 @@ export default function Dashboard() {
         }
     };
 
-    const total = stats.total_requests || 1;
-    const successRate = stats.total_requests > 0 
-        ? ((stats.issued / stats.total_requests) * 100).toFixed(1) 
-        : '0.0';
-    const pendingRate = stats.total_requests > 0 
-        ? ((stats.pending_confirmation / stats.total_requests) * 100).toFixed(1) 
-        : '0.0';
-    const failedRate = stats.total_requests > 0 
-        ? ((stats.failed / stats.total_requests) * 100).toFixed(1) 
-        : '0.0';
-    const reconRate = stats.total_requests > 0 
-        ? ((stats.needs_reconciliation / stats.total_requests) * 100).toFixed(1) 
-        : '0.0';
+    const total = stats.total_requests || 0;
+
+    const calcPercentage = (count) => {
+        if (!total || total <= 0) return '0.0';
+        return ((count / total) * 100).toFixed(1);
+    };
+
+    // All distinct lifecycle states mapping to reconcile with total requests
+    const statusBreakdown = [
+        { key: 'issued', label: 'Issued', count: stats.issued || 0, color: 'bg-emerald-500' },
+        { key: 'pending_confirmation', label: 'Pending', count: stats.pending_confirmation || 0, color: 'bg-sky-500' },
+        { key: 'needs_reconciliation', label: 'Needs Recon', count: stats.needs_reconciliation || 0, color: 'bg-amber-500' },
+        { key: 'failed', label: 'Failed', count: stats.failed || 0, color: 'bg-rose-500' },
+        { key: 'validated', label: 'Validated', count: stats.validated || 0, color: 'bg-blue-500' },
+        { key: 'submitted', label: 'Submitted', count: stats.submitted || 0, color: 'bg-indigo-500' },
+        { key: 'received', label: 'Received', count: stats.received || 0, color: 'bg-slate-400' },
+    ];
+
+    // Filter to states that currently have records, but always show Issued, Pending, Needs Recon, Failed, Validated if empty
+    const visibleBreakdown = statusBreakdown.filter(item => item.count > 0 || ['issued', 'pending_confirmation', 'needs_reconciliation', 'failed', 'validated'].includes(item.key));
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
@@ -72,11 +79,11 @@ export default function Dashboard() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <div className="flex items-center gap-2 text-[11px] font-bold text-teal-600 tracking-wider uppercase mb-1">
-                        <span>Triage & Verification</span>
+                        <span>Triage &amp; Verification</span>
                         <span>•</span>
                         <span className="flex items-center gap-1 text-slate-500 font-medium">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            SYNC: AUTO (real-time)
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                            Live Ingestion Pipeline
                         </span>
                     </div>
                     <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Policy Operations Dashboard</h1>
@@ -141,7 +148,7 @@ export default function Dashboard() {
                             {loading ? '-' : stats.issued.toLocaleString()}
                         </div>
                         <div className="text-[11px] text-emerald-600 font-semibold mt-1">
-                            {successRate}% success rate
+                            {calcPercentage(stats.issued)}% success rate
                         </div>
                     </div>
                 </div>
@@ -174,7 +181,7 @@ export default function Dashboard() {
                         <div className="text-2xl font-extrabold text-slate-900 font-mono tracking-tight">
                             {loading ? '-' : stats.failed.toLocaleString()}
                         </div>
-                        <div className="text-[11px] text-rose-600 font-medium mt-1">Needs manual triage / recon</div>
+                        <div className="text-[11px] text-rose-600 font-medium mt-1">Needs retry or triage</div>
                     </div>
                 </div>
             </div>
@@ -190,7 +197,7 @@ export default function Dashboard() {
                         </div>
                         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 text-[10px] font-semibold text-slate-600">
                             <span className="h-1.5 w-1.5 rounded-full bg-teal-500"></span>
-                            LIVE PIPELINE
+                            ACTIVE
                         </span>
                     </div>
 
@@ -262,79 +269,64 @@ export default function Dashboard() {
                     </div>
 
                     <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between text-xs text-slate-500">
-                        <span>Showing {recentRequests.length} of {stats.total_requests} policy ingestion entries</span>
+                        <span>Showing {recentRequests.length} of {stats.total_requests} policy requests</span>
                         <Link 
                             to="/requests"
                             className="inline-flex items-center gap-1 font-semibold text-teal-600 hover:text-teal-700 transition-colors"
                         >
-                            <span>View all {stats.total_requests} requests</span>
+                            <span>View all requests</span>
                             <ArrowRight className="h-3.5 w-3.5" />
                         </Link>
                     </div>
                 </div>
 
-                {/* Right Side: Status Summary & Idempotency Card */}
+                {/* Right Side: Reconciled Status Summary & Idempotency Card */}
                 <div className="space-y-6">
                     {/* Status Summary Card */}
                     <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Status Summary</h3>
-                            <span className="text-[10px] font-semibold text-slate-400 uppercase">Current Batch</span>
+                            <span className="text-[10px] font-semibold text-slate-400 uppercase font-mono">
+                                Total: {stats.total_requests}
+                            </span>
                         </div>
 
-                        {/* Progress Bar */}
+                        {/* Multi-segment Progress Bar reconciling to 100% */}
                         <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden flex mb-5">
-                            <div style={{ width: `${successRate}%` }} className="bg-emerald-500 h-full"></div>
-                            <div style={{ width: `${pendingRate}%` }} className="bg-sky-500 h-full"></div>
-                            <div style={{ width: `${reconRate}%` }} className="bg-amber-500 h-full"></div>
-                            <div style={{ width: `${failedRate}%` }} className="bg-rose-500 h-full"></div>
+                            {total > 0 ? (
+                                statusBreakdown.map((item) => {
+                                    const widthPercent = (item.count / total) * 100;
+                                    if (widthPercent <= 0) return null;
+                                    return (
+                                        <div
+                                            key={item.key}
+                                            style={{ width: `${widthPercent}%` }}
+                                            className={`${item.color} h-full`}
+                                            title={`${item.label}: ${item.count} (${widthPercent.toFixed(1)}%)`}
+                                        ></div>
+                                    );
+                                })
+                            ) : (
+                                <div className="bg-slate-200 h-full w-full"></div>
+                            )}
                         </div>
 
-                        {/* Breakdown List */}
-                        <div className="space-y-3 text-xs">
-                            <div className="flex items-center justify-between py-1">
-                                <div className="flex items-center gap-2">
-                                    <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-                                    <span className="font-medium text-slate-700">Issued</span>
+                        {/* Reconciled Breakdown List covering all existing states */}
+                        <div className="space-y-2.5 text-xs">
+                            {visibleBreakdown.map((item) => (
+                                <div key={item.key} className="flex items-center justify-between py-1 border-b border-slate-50 last:border-0">
+                                    <div className="flex items-center gap-2">
+                                        <span className={`h-2 w-2 rounded-full ${item.color}`}></span>
+                                        <span className="font-medium text-slate-700">{item.label}</span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="font-bold text-slate-800 font-mono">{item.count}</span>
+                                        <span className="text-slate-400 font-mono text-[11px] w-12 text-right">
+                                            {calcPercentage(item.count)}%
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    <span className="font-bold text-slate-800 font-mono">{stats.issued}</span>
-                                    <span className="text-slate-400 font-mono text-[11px] w-10 text-right">{successRate}%</span>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between py-1">
-                                <div className="flex items-center gap-2">
-                                    <span className="h-2 w-2 rounded-full bg-sky-500"></span>
-                                    <span className="font-medium text-slate-700">Pending</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <span className="font-bold text-slate-800 font-mono">{stats.pending_confirmation}</span>
-                                    <span className="text-slate-400 font-mono text-[11px] w-10 text-right">{pendingRate}%</span>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between py-1">
-                                <div className="flex items-center gap-2">
-                                    <span className="h-2 w-2 rounded-full bg-amber-500"></span>
-                                    <span className="font-medium text-slate-700">Needs Recon</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <span className="font-bold text-slate-800 font-mono">{stats.needs_reconciliation}</span>
-                                    <span className="text-slate-400 font-mono text-[11px] w-10 text-right">{reconRate}%</span>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between py-1">
-                                <div className="flex items-center gap-2">
-                                    <span className="h-2 w-2 rounded-full bg-rose-500"></span>
-                                    <span className="font-medium text-slate-700">Failed</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <span className="font-bold text-slate-800 font-mono">{stats.failed}</span>
-                                    <span className="text-slate-400 font-mono text-[11px] w-10 text-right">{failedRate}%</span>
-                                </div>
-                            </div>
+                            ))}
                         </div>
                     </div>
 
@@ -347,7 +339,7 @@ export default function Dashboard() {
                             <div>
                                 <h4 className="text-xs font-bold text-teal-900 tracking-tight">Idempotency Assurance</h4>
                                 <p className="text-[11px] text-teal-800/80 leading-relaxed mt-1">
-                                    PolicyFlow ensures idempotent issuance checks before retrying failed or timed-out requests, preventing duplicate debits and multiple cert issuance.
+                                    PolicyFlow validates duplicate intake and checks provider state before issuing policies, preventing duplicate debits and duplicate policy certificate binding.
                                 </p>
                             </div>
                         </div>

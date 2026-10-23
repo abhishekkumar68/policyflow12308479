@@ -11,9 +11,7 @@ import {
     Globe, 
     ChevronLeft, 
     ChevronRight, 
-    CheckCircle2, 
-    RefreshCw, 
-    AlertTriangle,
+    Eye,
     Loader2
 } from 'lucide-react';
 
@@ -31,6 +29,7 @@ export default function PolicyRequests() {
         to: 0,
     });
     const [loading, setLoading] = useState(true);
+    const [csvError, setCsvError] = useState(null);
 
     const activeStatus = searchParams.get('status') || 'ALL';
     const searchQuery = searchParams.get('search') || '';
@@ -122,20 +121,28 @@ export default function PolicyRequests() {
     };
 
     const exportToCSV = () => {
-        if (!requests.length) return;
-        const headers = ['Request ID', 'Customer Name', 'DOB', 'Destination', 'Plan', 'Sum Insured', 'Premium', 'Status', 'Policy Number', 'Created At'];
+        setCsvError(null);
+        if (!requests || requests.length === 0) {
+            setCsvError('No policy requests available to export for the current filter.');
+            setTimeout(() => setCsvError(null), 4000);
+            return;
+        }
+
+        const headers = ['Request ID', 'Agent ID', 'Customer Name', 'DOB', 'Destination', 'Plan', 'Sum Insured', 'Premium', 'Status', 'Policy Number', 'Created At'];
         const rows = requests.map(r => [
-            r.client_request_id,
-            r.customer_name,
-            r.date_of_birth,
-            r.destination,
-            r.plan_code,
-            r.sum_insured,
-            r.premium,
-            r.status,
+            r.client_request_id || `REQ-${r.id}`,
+            r.agent_id || '',
+            r.customer_name || '',
+            r.date_of_birth || '',
+            r.destination || '',
+            r.plan_code || '',
+            r.sum_insured || '',
+            r.premium || '',
+            r.status || '',
             r.policy_number || '',
             r.created_at || '',
         ]);
+
         const csvContent = [headers.join(','), ...rows.map(e => e.map(val => `"${val}"`).join(','))].join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -151,11 +158,11 @@ export default function PolicyRequests() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <div className="text-[11px] font-bold text-teal-600 tracking-wider uppercase mb-1">
-                        POLICY LIFE-CYCLE ENGINE • SYNC V4.18 // AUTO-POLL ACTIVE
+                        POLICY LIFE-CYCLE INVENTORY
                     </div>
                     <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Policy Requests</h1>
                     <p className="text-xs text-slate-500 mt-0.5">
-                        Search, filter, and inspect all travel insurance policy requests. Real-time telemetry across downstream carrier sync queues and underwriting rules.
+                        Search, filter, and inspect travel insurance policy intake records and issuance state history.
                     </p>
                 </div>
 
@@ -163,20 +170,28 @@ export default function PolicyRequests() {
                     <button
                         type="button"
                         onClick={exportToCSV}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg shadow-xs transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
+                        title="Export current table view to CSV"
                     >
                         <Download className="h-3.5 w-3.5 text-slate-500" />
                         <span>Export CSV</span>
                     </button>
                     <Link
                         to="/create"
-                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
                     >
                         <Plus className="h-4 w-4" />
                         <span>Create Request</span>
                     </Link>
                 </div>
             </div>
+
+            {csvError && (
+                <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-xl flex items-center justify-between shadow-xs">
+                    <span>{csvError}</span>
+                    <button type="button" onClick={() => setCsvError(null)} className="text-amber-700 font-bold ml-2">&times;</button>
+                </div>
+            )}
 
             {/* Filter and Search Bar */}
             <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
@@ -199,7 +214,7 @@ export default function PolicyRequests() {
                         <button
                             type="button"
                             onClick={handleReset}
-                            className="inline-flex items-center gap-1 px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+                            className="inline-flex items-center gap-1 px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
                         >
                             <RotateCcw className="h-3.5 w-3.5" />
                             <span>Reset</span>
@@ -216,7 +231,7 @@ export default function PolicyRequests() {
                                 key={tab.key}
                                 type="button"
                                 onClick={() => handleTabChange(tab.key)}
-                                className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors ${
+                                className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors cursor-pointer ${
                                     isSelected
                                         ? 'bg-slate-900 text-white font-semibold shadow-xs'
                                         : 'bg-slate-100/70 text-slate-600 hover:bg-slate-200/60 hover:text-slate-900'
@@ -236,25 +251,26 @@ export default function PolicyRequests() {
                         <thead className="bg-slate-50/80 border-b border-slate-100 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
                             <tr>
                                 <th className="px-5 py-3.5">Request ID</th>
-                                <th className="px-5 py-3.5">Customer & Contact</th>
+                                <th className="px-5 py-3.5">Customer &amp; Contact</th>
                                 <th className="px-5 py-3.5">Destination</th>
                                 <th className="px-5 py-3.5">Plan</th>
                                 <th className="px-5 py-3.5">Premium</th>
                                 <th className="px-5 py-3.5">Lifecycle Status</th>
-                                <th className="px-5 py-3.5 text-right">Last Updated</th>
+                                <th className="px-5 py-3.5">Last Updated</th>
+                                <th className="px-5 py-3.5 text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan="7" className="py-16 text-center text-slate-400">
+                                    <td colSpan="8" className="py-16 text-center text-slate-400">
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-teal-600" />
                                         Filtering policy requests...
                                     </td>
                                 </tr>
                             ) : requests.length === 0 ? (
                                 <tr>
-                                    <td colSpan="7" className="py-16 text-center text-slate-400">
+                                    <td colSpan="8" className="py-16 text-center text-slate-400">
                                         No policy requests match your active filters.
                                     </td>
                                 </tr>
@@ -263,7 +279,7 @@ export default function PolicyRequests() {
                                     <tr
                                         key={req.id}
                                         onClick={() => navigate(`/requests/${req.id}`)}
-                                        className="hover:bg-slate-50/80 cursor-pointer transition-colors"
+                                        className="hover:bg-slate-50/80 cursor-pointer transition-colors group"
                                     >
                                         <td className="px-5 py-4">
                                             <div className="flex items-center gap-2">
@@ -306,7 +322,7 @@ export default function PolicyRequests() {
                                         <td className="px-5 py-4">
                                             <StatusBadge status={req.status} />
                                         </td>
-                                        <td className="px-5 py-4 text-right text-[11px] text-slate-500 font-mono">
+                                        <td className="px-5 py-4 text-[11px] text-slate-500 font-mono">
                                             {req.updated_at ? new Date(req.updated_at).toLocaleString('en-IN', {
                                                 day: '2-digit',
                                                 month: 'short',
@@ -314,6 +330,18 @@ export default function PolicyRequests() {
                                                 hour: '2-digit',
                                                 minute: '2-digit'
                                             }) : '-'}
+                                        </td>
+                                        <td className="px-5 py-4 text-right">
+                                            <span 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    navigate(`/requests/${req.id}`);
+                                                }}
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 group-hover:bg-teal-600 group-hover:text-white font-semibold text-xs transition-colors"
+                                            >
+                                                <Eye className="h-3.5 w-3.5" />
+                                                <span>View</span>
+                                            </span>
                                         </td>
                                     </tr>
                                 ))
@@ -332,13 +360,12 @@ export default function PolicyRequests() {
                             type="button"
                             onClick={() => handlePageChange(pagination.current_page - 1)}
                             disabled={pagination.current_page <= 1}
-                            className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                         >
                             <ChevronLeft className="h-4 w-4" />
                         </button>
 
                         {Array.from({ length: pagination.last_page }, (_, i) => i + 1).map((page) => {
-                            // Only show current, first, last, and immediate siblings if many pages
                             if (
                                 page === 1 || 
                                 page === pagination.last_page || 
@@ -349,7 +376,7 @@ export default function PolicyRequests() {
                                         key={page}
                                         type="button"
                                         onClick={() => handlePageChange(page)}
-                                        className={`h-8 w-8 rounded-lg font-semibold text-xs transition-colors ${
+                                        className={`h-8 w-8 rounded-lg font-semibold text-xs transition-colors cursor-pointer ${
                                             pagination.current_page === page
                                                 ? 'bg-[#0f766e] text-white'
                                                 : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
@@ -371,43 +398,10 @@ export default function PolicyRequests() {
                             type="button"
                             onClick={() => handlePageChange(pagination.current_page + 1)}
                             disabled={pagination.current_page >= pagination.last_page}
-                            className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                         >
                             <ChevronRight className="h-4 w-4" />
                         </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Bottom 3 Summary Telemetry Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600">
-                        <CheckCircle2 className="h-5 w-5" />
-                    </div>
-                    <div>
-                        <div className="text-base font-extrabold text-slate-900 font-mono">98.4%</div>
-                        <div className="text-[11px] text-slate-500">Instant Auto-Issuance SLA</div>
-                    </div>
-                </div>
-
-                <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-sky-50 text-sky-600">
-                        <RefreshCw className="h-5 w-5" />
-                    </div>
-                    <div>
-                        <div className="text-base font-extrabold text-slate-900 font-mono">31 Pending</div>
-                        <div className="text-[11px] text-slate-500">Carrier gateway ACK queue</div>
-                    </div>
-                </div>
-
-                <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600">
-                        <AlertTriangle className="h-5 w-5" />
-                    </div>
-                    <div>
-                        <div className="text-base font-extrabold text-slate-900 font-mono">14 Mismatches</div>
-                        <div className="text-[11px] text-slate-500">Requires manual underwriter triage</div>
                     </div>
                 </div>
             </div>

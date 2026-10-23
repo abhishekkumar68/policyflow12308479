@@ -4,13 +4,11 @@ import { createPolicyRequest } from '../services/api';
 import { 
     User, 
     Calendar, 
-    Shield, 
     Send, 
     Plane, 
     Globe, 
     Info, 
     Check, 
-    Sparkles, 
     AlertCircle,
     Loader2
 } from 'lucide-react';
@@ -25,7 +23,6 @@ export default function CreatePolicyRequest() {
     futureDate.setDate(futureDate.getDate() + 11);
 
     const formatDateInput = (d) => d.toISOString().split('T')[0];
-
     const generateId = () => 'CR-2024-' + Math.floor(1000 + Math.random() * 9000);
 
     const [formData, setFormData] = useState({
@@ -45,25 +42,38 @@ export default function CreatePolicyRequest() {
     const [errors, setErrors] = useState({});
     const [serverError, setServerError] = useState(null);
 
-    // Live Actuarial Calculations matching the assignment exact formula
+    // Handle trip start change ensuring trip_end >= trip_start
+    const handleTripStartChange = (newStart) => {
+        let updatedEnd = formData.trip_end;
+        if (updatedEnd && updatedEnd < newStart) {
+            updatedEnd = newStart;
+        }
+        setFormData({
+            ...formData,
+            trip_start: newStart,
+            trip_end: updatedEnd,
+        });
+    };
+
+    // Live Actuarial Calculations strictly matching the assignment pricing rules
     const calculations = useMemo(() => {
-        // Base rate
+        // Daily Base Rates
         const baseRates = { BASIC: 12, PLUS: 20, PREMIUM: 30 };
         const baseRate = baseRates[formData.plan_code] || 20;
 
-        // Travel days
+        // Inclusive travel days: trip_end - trip_start + 1 (minimum 1)
         let travelDays = 1;
         if (formData.trip_start && formData.trip_end) {
             const start = new Date(formData.trip_start);
             const end = new Date(formData.trip_end);
-            const diffTime = end - start;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const diffTime = end.getTime() - start.getTime();
+            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
             travelDays = Math.max(1, diffDays + 1);
         }
 
-        // Age calculation on trip start
+        // Age calculation on trip start date
         let age = 30;
-        let ageMultiplier = 1.0;
+        let ageMultiplier = 1.00;
         if (formData.date_of_birth && formData.trip_start) {
             const dob = new Date(formData.date_of_birth);
             const start = new Date(formData.trip_start);
@@ -74,23 +84,25 @@ export default function CreatePolicyRequest() {
             }
             age = Math.max(0, diffYears);
 
+            // Assignment age brackets on trip start:
+            // 0–17: 1.10; 18–60: 1.00; 61–70: 1.50; 71+: 2.00
             if (age <= 17) ageMultiplier = 1.10;
             else if (age <= 60) ageMultiplier = 1.00;
             else if (age <= 70) ageMultiplier = 1.50;
             else ageMultiplier = 2.00;
         }
 
-        // Destination multiplier
+        // Destination multiplier: DOMESTIC = 1.00, INTERNATIONAL = 1.80
         const destMultiplier = formData.destination === 'INTERNATIONAL' ? 1.80 : 1.00;
 
-        // Coverage multiplier
+        // Coverage multiplier: 100,000 = 1.00, 300,000 = 1.25, 500,000 = 1.50
         const coverageMultipliers = { 100000: 1.00, 300000: 1.25, 500000: 1.50 };
-        const coverageMultiplier = coverageMultipliers[formData.sum_insured] || 1.00;
+        const coverageMultiplier = coverageMultipliers[Number(formData.sum_insured)] || 1.00;
 
         // Base cost subtotal
         const baseSubtotal = baseRate * travelDays;
 
-        // Final premium = baseRate * travelDays * ageMultiplier * destMultiplier * coverageMultiplier
+        // Final formula: base_rate × travel_days × age_multiplier × destination_multiplier × coverage_multiplier
         const exactPremium = baseRate * travelDays * ageMultiplier * destMultiplier * coverageMultiplier;
         const totalPremium = Math.round(exactPremium * 100) / 100;
 
@@ -98,9 +110,9 @@ export default function CreatePolicyRequest() {
             baseRate,
             travelDays,
             age,
-            ageMultiplier,
-            destMultiplier,
-            coverageMultiplier,
+            ageMultiplier: ageMultiplier.toFixed(2),
+            destMultiplier: destMultiplier.toFixed(2),
+            coverageMultiplier: coverageMultiplier.toFixed(2),
             baseSubtotal,
             totalPremium: totalPremium.toFixed(2),
         };
@@ -139,21 +151,14 @@ export default function CreatePolicyRequest() {
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
             {/* Top Breadcrumb & Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <div className="text-[11px] font-bold text-teal-600 tracking-wider uppercase mb-1">
-                        POLICIES &gt; UNDERWRITING DRAFT
-                    </div>
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Create Policy Request</h1>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                        Submit a new travel insurance policy request and calculate real-time estimated premium.
-                    </p>
+            <div>
+                <div className="text-[11px] font-bold text-teal-600 tracking-wider uppercase mb-1">
+                    POLICIES &gt; INTAKE FORM
                 </div>
-
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs text-slate-600 font-mono">
-                    <span className="h-2 w-2 rounded-full bg-teal-500 animate-pulse"></span>
-                    <span>Engine: Live Quoting v4.8 // SLA: &lt; 200ms</span>
-                </div>
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Create Policy Request</h1>
+                <p className="text-xs text-slate-500 mt-0.5">
+                    Submit a new travel insurance policy request and calculate the estimated premium according to official pricing rules.
+                </p>
             </div>
 
             {serverError && (
@@ -169,20 +174,14 @@ export default function CreatePolicyRequest() {
                 <div className="lg:col-span-2 space-y-6">
                     {/* Section A: Customer Details */}
                     <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-5">
-                        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                            <div className="flex items-center gap-3">
-                                <div className="h-7 w-7 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center font-bold text-xs">
-                                    A
-                                </div>
-                                <div>
-                                    <h2 className="text-sm font-bold text-slate-900">Customer Details</h2>
-                                    <p className="text-[11px] text-slate-400">Primary insured traveler &amp; agent binding info</p>
-                                </div>
+                        <div className="pb-3 border-b border-slate-100 flex items-center gap-3">
+                            <div className="h-7 w-7 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center font-bold text-xs">
+                                A
                             </div>
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold">
-                                <Check className="h-3 w-3" />
-                                Verified KYC
-                            </span>
+                            <div>
+                                <h2 className="text-sm font-bold text-slate-900">Customer Details</h2>
+                                <p className="text-[11px] text-slate-400">Primary insured traveler &amp; agent binding info</p>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -258,7 +257,7 @@ export default function CreatePolicyRequest() {
                                     />
                                 </div>
                                 <p className="text-[10px] text-slate-400 mt-1">
-                                    Age multiplier applied: 0-17: 1.1x, 18-60: 1.0x, 61-70: 1.5x, 71+: 2.0x
+                                    Multipliers: 0-17: 1.10x, 18-60: 1.00x, 61-70: 1.50x, 71+: 2.00x
                                 </p>
                                 {errors.date_of_birth && (
                                     <p className="text-[11px] text-rose-600 mt-1">{errors.date_of_birth[0]}</p>
@@ -269,20 +268,14 @@ export default function CreatePolicyRequest() {
 
                     {/* Section B: Trip Details */}
                     <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-5">
-                        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                            <div className="flex items-center gap-3">
-                                <div className="h-7 w-7 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center font-bold text-xs">
-                                    B
-                                </div>
-                                <div>
-                                    <h2 className="text-sm font-bold text-slate-900">Trip Details</h2>
-                                    <p className="text-[11px] text-slate-400">Geographic corridor and inclusive stay calendar</p>
-                                </div>
+                        <div className="pb-3 border-b border-slate-100 flex items-center gap-3">
+                            <div className="h-7 w-7 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center font-bold text-xs">
+                                B
                             </div>
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold">
-                                <Globe className="h-3 w-3 text-teal-600" />
-                                Global Network
-                            </span>
+                            <div>
+                                <h2 className="text-sm font-bold text-slate-900">Trip Details</h2>
+                                <p className="text-[11px] text-slate-400">Destination corridor and inclusive travel dates</p>
+                            </div>
                         </div>
 
                         {/* Destination Corridor Selector */}
@@ -306,11 +299,11 @@ export default function CreatePolicyRequest() {
                                         <div className="flex items-center gap-2">
                                             <span className="text-xs font-bold text-slate-800">Domestic</span>
                                             {formData.destination === 'DOMESTIC' && (
-                                                <span className="px-1.5 py-0.2 rounded bg-teal-100 text-teal-700 text-[10px] font-bold">Active</span>
+                                                <span className="px-1.5 py-0.2 rounded bg-teal-100 text-teal-700 text-[10px] font-bold">Selected</span>
                                             )}
                                         </div>
-                                        <div className="text-[11px] text-slate-500 mt-0.5">India Interstate Transit</div>
-                                        <div className="text-[10px] font-mono text-slate-400 mt-1">1.0x Base Factor</div>
+                                        <div className="text-[11px] text-slate-500 mt-0.5">Domestic Travel</div>
+                                        <div className="text-[10px] font-mono text-slate-400 mt-1">1.00x Multiplier</div>
                                     </div>
                                 </div>
 
@@ -329,11 +322,11 @@ export default function CreatePolicyRequest() {
                                         <div className="flex items-center gap-2">
                                             <span className="text-xs font-bold text-slate-800">International</span>
                                             {formData.destination === 'INTERNATIONAL' && (
-                                                <span className="px-1.5 py-0.2 rounded bg-teal-100 text-teal-700 text-[10px] font-bold">Active</span>
+                                                <span className="px-1.5 py-0.2 rounded bg-teal-100 text-teal-700 text-[10px] font-bold">Selected</span>
                                             )}
                                         </div>
-                                        <div className="text-[11px] text-slate-500 mt-0.5">Worldwide Overseas Transit</div>
-                                        <div className="text-[10px] font-mono text-slate-400 mt-1">1.8x Risk Factor</div>
+                                        <div className="text-[11px] text-slate-500 mt-0.5">Overseas Travel</div>
+                                        <div className="text-[10px] font-mono text-slate-400 mt-1">1.80x Multiplier</div>
                                     </div>
                                 </div>
                             </div>
@@ -350,7 +343,7 @@ export default function CreatePolicyRequest() {
                                     <input
                                         type="date"
                                         value={formData.trip_start}
-                                        onChange={(e) => setFormData({ ...formData, trip_start: e.target.value })}
+                                        onChange={(e) => handleTripStartChange(e.target.value)}
                                         className={`w-full pl-9 pr-3 py-2 bg-slate-50 border ${errors.trip_start ? 'border-rose-400' : 'border-slate-200'} rounded-lg text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500`}
                                         required
                                     />
@@ -369,6 +362,7 @@ export default function CreatePolicyRequest() {
                                     <input
                                         type="date"
                                         value={formData.trip_end}
+                                        min={formData.trip_start}
                                         onChange={(e) => setFormData({ ...formData, trip_end: e.target.value })}
                                         className={`w-full pl-9 pr-3 py-2 bg-slate-50 border ${errors.trip_end ? 'border-rose-400' : 'border-slate-200'} rounded-lg text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500`}
                                         required
@@ -387,30 +381,27 @@ export default function CreatePolicyRequest() {
                             </div>
                             <div className="text-xs">
                                 <span className="font-bold text-teal-900">{calculations.travelDays} Travel Days</span>
-                                <span className="text-teal-700 text-[11px] ml-2">Inclusive of both outbound departure and return arrival. (Min 1 day)</span>
+                                <span className="text-teal-700 text-[11px] ml-2">Inclusive: trip_end &minus; trip_start + 1 (minimum 1 day).</span>
                             </div>
                         </div>
                     </div>
 
                     {/* Section C: Insurance Plan */}
                     <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-xs space-y-5">
-                        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                            <div className="flex items-center gap-3">
-                                <div className="h-7 w-7 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center font-bold text-xs">
-                                    C
-                                </div>
-                                <div>
-                                    <h2 className="text-sm font-bold text-slate-900">Insurance Plan</h2>
-                                    <p className="text-[11px] text-slate-400">Policy scope tiering and total sum insured coverage</p>
-                                </div>
+                        <div className="pb-3 border-b border-slate-100 flex items-center gap-3">
+                            <div className="h-7 w-7 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center font-bold text-xs">
+                                C
                             </div>
-                            <span className="text-[10px] text-slate-400">Underwritten by Trippers Shield General</span>
+                            <div>
+                                <h2 className="text-sm font-bold text-slate-900">Insurance Plan &amp; Coverage</h2>
+                                <p className="text-[11px] text-slate-400">Plan tier and sum insured limit</p>
+                            </div>
                         </div>
 
                         {/* Daily Coverage Tier */}
                         <div>
                             <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2">
-                                Select Daily Coverage Tier
+                                Select Daily Plan Tier
                             </label>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 {/* BASIC */}
@@ -430,7 +421,7 @@ export default function CreatePolicyRequest() {
                                         </div>
                                     </div>
                                     <div className="text-[11px] text-slate-500 mt-3 pt-2 border-t border-slate-200/60">
-                                        Medical evacuation only
+                                        Base Daily Rate: ₹12.00
                                     </div>
                                 </div>
 
@@ -454,7 +445,7 @@ export default function CreatePolicyRequest() {
                                         </div>
                                     </div>
                                     <div className="text-[11px] text-slate-500 mt-3 pt-2 border-t border-slate-200/60">
-                                        Full baggage + Medical coverage
+                                        Base Daily Rate: ₹20.00
                                     </div>
                                 </div>
 
@@ -475,7 +466,7 @@ export default function CreatePolicyRequest() {
                                         </div>
                                     </div>
                                     <div className="text-[11px] text-slate-500 mt-3 pt-2 border-t border-slate-200/60">
-                                        Zero deductible + Flight delay
+                                        Base Daily Rate: ₹30.00
                                     </div>
                                 </div>
                             </div>
@@ -484,13 +475,13 @@ export default function CreatePolicyRequest() {
                         {/* Sum Insured Limit */}
                         <div>
                             <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2">
-                                Sum Insured Protection Limit
+                                Sum Insured Limit
                             </label>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 {[
-                                    { value: 100000, label: '₹100,000', factor: '1.0x Baseline scale' },
-                                    { value: 300000, label: '₹300,000', factor: '1.25x Scale factor' },
-                                    { value: 500000, label: '₹500,000', factor: '1.50x Max shield' },
+                                    { value: 100000, label: '₹100,000', factor: '1.00x Coverage Multiplier' },
+                                    { value: 300000, label: '₹300,000', factor: '1.25x Coverage Multiplier' },
+                                    { value: 500000, label: '₹500,000', factor: '1.50x Coverage Multiplier' },
                                 ].map((item) => (
                                     <div
                                         key={item.value}
@@ -521,7 +512,7 @@ export default function CreatePolicyRequest() {
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-xs font-bold shadow-sm transition-colors"
+                            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
                         >
                             {submitting ? (
                                 <>
@@ -542,9 +533,9 @@ export default function CreatePolicyRequest() {
                 <div className="space-y-6">
                     <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs p-6 space-y-6 sticky top-24">
                         <div>
-                            <div className="text-[10px] font-bold text-teal-600 uppercase tracking-wider">Actuarial Engine</div>
+                            <div className="text-[10px] font-bold text-teal-600 uppercase tracking-wider">Actuarial Breakdown</div>
                             <div className="flex items-center justify-between mt-1">
-                                <h3 className="text-base font-bold text-slate-900">Calculated Premium</h3>
+                                <h3 className="text-base font-bold text-slate-900">Estimated Premium</h3>
                                 <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-mono font-bold text-slate-700">INR (₹)</span>
                             </div>
                         </div>
@@ -576,32 +567,32 @@ export default function CreatePolicyRequest() {
                             </div>
 
                             <div className="flex items-center justify-between text-slate-600">
-                                <span>Destination Factor</span>
+                                <span>Destination Multiplier</span>
                                 <span className="font-mono font-semibold text-slate-800">
-                                    {calculations.destMultiplier}x ({formData.destination === 'INTERNATIONAL' ? 'International' : 'Domestic'})
+                                    {calculations.destMultiplier}x ({formData.destination})
                                 </span>
                             </div>
 
                             <div className="flex items-center justify-between text-slate-600">
                                 <span>Coverage Multiplier</span>
                                 <span className="font-mono font-semibold text-slate-800">
-                                    {calculations.coverageMultiplier}x (₹{formData.sum_insured.toLocaleString()})
+                                    {calculations.coverageMultiplier}x (₹{Number(formData.sum_insured).toLocaleString()})
                                 </span>
                             </div>
                         </div>
 
                         {/* Active Formula Box */}
                         <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/80">
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active Formula</div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Formula</div>
                             <div className="text-xs font-mono font-medium text-slate-700 mt-1">
                                 {calculations.travelDays} days × ₹{calculations.baseRate} × {calculations.ageMultiplier} × {calculations.destMultiplier} × {calculations.coverageMultiplier}
                             </div>
                         </div>
 
-                        {/* Total Premium Card (Big Highlight) */}
+                        {/* Total Premium Card */}
                         <div className="p-5 rounded-xl bg-gradient-to-br from-teal-700 to-emerald-800 text-white shadow-md">
                             <div className="text-[10px] font-bold uppercase tracking-widest text-teal-200">
-                                Total Payable Premium
+                                Estimated Total Premium
                             </div>
                             <div className="flex items-baseline gap-2 mt-1">
                                 <span className="text-3xl font-extrabold font-mono tracking-tight">₹{calculations.totalPremium}</span>
@@ -609,22 +600,17 @@ export default function CreatePolicyRequest() {
                             </div>
                             <div className="flex items-center gap-1.5 text-[11px] text-teal-100 mt-2 font-medium">
                                 <Check className="h-3.5 w-3.5 text-teal-300" />
-                                <span>Taxes inclusive, 18% GST built-in</span>
+                                <span>Calculated per assignment pricing rules</span>
                             </div>
-                        </div>
-
-                        <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                            <span>Engine: Actuarial-v2</span>
-                            <span>Hash: #EST-{formData.client_request_id.slice(-6)}</span>
                         </div>
 
                         {/* Underwriting Guide */}
                         <div className="p-3.5 rounded-lg bg-sky-50/70 border border-sky-100 text-sky-900 text-xs flex items-start gap-2.5">
                             <Info className="h-4 w-4 text-sky-600 shrink-0 mt-0.5" />
                             <div>
-                                <span className="font-bold text-[11px]">Underwriting Guide:</span>
+                                <span className="font-bold text-[11px]">Pricing Note:</span>
                                 <p className="text-[11px] text-sky-800/90 mt-0.5 leading-relaxed">
-                                    Policies issued via this portal are dispatched to the traveler immediately upon submission.
+                                    The backend PremiumCalculationService calculates and locks the immutable premium snapshot upon request submission.
                                 </p>
                             </div>
                         </div>

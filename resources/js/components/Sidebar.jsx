@@ -4,12 +4,10 @@ import {
     LayoutDashboard, 
     FileSpreadsheet, 
     FilePlus2, 
-    FileCheck2, 
-    ShieldCheck,
-    UserCheck
+    ShieldCheck
 } from 'lucide-react';
 
-export default function Sidebar() {
+export default function Sidebar({ onOpenProfile }) {
     const navItems = [
         { to: '/', label: 'Dashboard', icon: LayoutDashboard, exact: true },
         { to: '/requests', label: 'Policy Requests', icon: FileSpreadsheet },
@@ -17,9 +15,9 @@ export default function Sidebar() {
     ];
 
     return (
-        <aside className="w-64 bg-[#0a1224] text-slate-300 flex flex-col shrink-0 min-h-screen border-r border-slate-800/80">
+        <aside className="w-64 bg-[#0a1224] text-slate-300 flex flex-col shrink-0 h-full border-r border-slate-800/80 select-none">
             {/* Brand Header */}
-            <div className="p-6 pb-5 border-b border-slate-800/60">
+            <div className="p-6 pb-5 border-b border-slate-800/60 shrink-0">
                 <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white shadow-lg shadow-teal-500/20">
                         <ShieldCheck className="h-6 w-6 stroke-[2.2]" />
@@ -31,8 +29,8 @@ export default function Sidebar() {
                 </div>
             </div>
 
-            {/* Nav Links */}
-            <div className="flex-1 px-3 py-6 space-y-6">
+            {/* Nav Links (scrollable if screen is very short, otherwise clean) */}
+            <div className="flex-1 px-3 py-6 space-y-6 overflow-y-auto">
                 <div>
                     <div className="px-3 mb-2.5 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
                         Operations
@@ -62,20 +60,26 @@ export default function Sidebar() {
                 </div>
             </div>
 
-            {/* User Footer Profile */}
-            <div className="p-4 border-t border-slate-800/60">
-                <div className="flex items-center gap-3 p-2 rounded-lg bg-slate-900/80 border border-slate-800">
-                    <div className="relative">
-                        <div className="h-9 w-9 rounded-full bg-teal-900/60 text-teal-300 border border-teal-500/30 flex items-center justify-center font-bold text-xs">
+            {/* Pinned Bottom User Profile Card */}
+            <div className="p-4 border-t border-slate-800/60 shrink-0 mt-auto bg-[#0a1224]">
+                <button
+                    type="button"
+                    onClick={onOpenProfile}
+                    className="w-full text-left flex items-center gap-3 p-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-slate-800 transition-colors cursor-pointer group"
+                    title="Click to view operator details"
+                    aria-label="View operator profile"
+                >
+                    <div className="relative shrink-0">
+                        <div className="h-9 w-9 rounded-full bg-teal-900/70 text-teal-300 border border-teal-500/30 flex items-center justify-center font-bold text-xs group-hover:border-teal-400 transition-colors">
                             NS
                         </div>
                         <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-[#0a1224]" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-white truncate">Neha Sharma</p>
-                        <p className="text-[11px] text-slate-400 truncate">Ops Specialist</p>
+                        <p className="text-xs font-semibold text-white truncate group-hover:text-teal-200 transition-colors">Neha Sharma</p>
+                        <p className="text-[11px] text-slate-400 truncate">Ops Specialist (AGT-4092)</p>
                     </div>
-                </div>
+                </button>
             </div>
         </aside>
     );
