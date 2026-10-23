@@ -1,0 +1,34 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class PolicyStateHistory extends Model
+{
+    public $timestamps = false;
+
+    protected $table = 'policy_state_history';
+
+    protected $fillable = [
+        'policy_request_id',
+        'from_state',
+        'to_state',
+        'reason',
+        'metadata',
+        'transitioned_at',
+    ];
+
+    protected $casts = [
+        'transitioned_at' => 'datetime',
+    ];
+
+    /**
+     * Get the policy request this history entry belongs to.
+     */
+    public function policyRequest(): BelongsTo
+    {
+        return $this->belongsTo(PolicyRequest::class);
+    }
+}
